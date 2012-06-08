@@ -1,5 +1,5 @@
-import select
-import socket
+import sys
+import signal
 
 
 def start(zope_layer_dotted_name):
@@ -14,38 +14,20 @@ def start(zope_layer_dotted_name):
     print "layer : {0}".format(zope_layer_dotted_name)
     print '=' * COUNT
 
-    # Create a TCP/IP socket
-    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.setblocking(0)
-
-    # Bind the socket to the port
-    server_address = ('localhost', 10000)
-    server.bind(server_address)
-
-    # Listen for incoming connections
-    server.listen(5)
-
-    # Sockets from which we expect to read
-    inputs = [server]
-
-    # Sockets to which we expect to write
-    outputs = []
-
     zsl = Zope2ServerLibrary()
     zsl.start_zope_server(zope_layer_dotted_name)
-    print '=' * COUNT
-    print "Zope 2 server started"
-    print "layer : {0}".format(zope_layer_dotted_name)
-    print '=' * COUNT
-
     try:
+        zsl.zodb_setup()
 
-        while inputs:
+        print '=' * COUNT
+        print "Zope 2 server started"
+        print "layer : {0}".format(zope_layer_dotted_name)
+        print '=' * COUNT
 
-            # Wait for at least one of the sockets to be ready for processing
-            readable, writable, exceptional = select.select(
-                    inputs, outputs, inputs)
+        sys.stdout.flush()
+        signal.pause()
     finally:
+        zsl.zodb_teardown()
         print
         print "Stopping Zope 2 server"
         print '=' * COUNT
