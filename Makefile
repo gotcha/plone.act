@@ -2,9 +2,10 @@
 #
 pybot_options =
 
-.PHONY: instance cleanall test robot stop
+.PHONY: instance cleanall test robot stop cached-eggs
 
 BUILDOUT_COMMAND = ./bin/buildout -Nt 5
+BUILDOUT_FILES = buildout.cfg pybot.cfg setup.py bin/buildout
 
 all: instance
 
@@ -14,24 +15,27 @@ endif
 
 ifdef IS_TRAVIS
 
-# use cache to accelerate download 
-download-and-eggs-plone-4.1.4.tgz:
-	wget https://github.com/downloads/plone/Products.CMFPlone/download-and-eggs-plone-4.1.4.tgz
- 
-download-cache: download-and-eggs-plone-4.1.4.tgz
-	tar -xzf download-and-eggs-plone-4.1.4.tgz
-	touch $@
+buildout-cache:
+	mkdir $@
+
+buildout-cache/downloads: buildout-cache
+	mkdir $@
+
+buildout-cache/eggs: buildout-cache
+	mkdir $@
 
 # use specific buildout that depends on cache
 buildout.cfg: travis.cfg
 	cp travis.cfg buildout.cfg
 
-BUILDOUT_FILES = buildout.cfg pybot.cfg setup.py bin/buildout download-cache
-
 # use python as Travis has setup the virtualenv
 bin/buildout: bootstrap.py buildout.cfg
 	python bootstrap.py
 	touch $@
+
+cached-eggs: bin/buildout buildout-cache/downloads buildout-cache/eggs
+	bin/buildout install download
+	bin/buildout install install
 
 else
 
@@ -43,7 +47,6 @@ bin/python:
 buildout.cfg: dev.cfg
 	cp dev.cfg buildout.cfg
 
-BUILDOUT_FILES = buildout.cfg pybot.cfg setup.py bin/buildout
 
 bin/buildout: bin/python bootstrap.py buildout.cfg
 	./bin/python bootstrap.py
